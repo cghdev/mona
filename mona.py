@@ -15595,8 +15595,41 @@ def main(args):
 					byteerror = True
 
 			if "cpb" in args:
-				if type(args["cpb"]).__name__.lower() != "bool":
-					badbytes = hex2bin(args["cpb"])
+				badchars = args["cpb"]
+				badchars = badchars.replace("'","")
+				badchars = badchars.replace('"',"")
+				badchars = badchars.replace("\\x","")
+				# see if we need to expand ..
+				bpos = 0
+				newbadchars = ""
+				while bpos < len(badchars):
+					curchar = badchars[bpos]+badchars[bpos+1]
+					if curchar == "..":
+						pos = bpos
+						if pos > 1 and pos <= len(badchars)-4:
+							# get byte before and after ..
+							bytebefore = badchars[pos-2] + badchars[pos-1]
+							byteafter = badchars[pos+2] + badchars[pos+3]
+							bbefore = int(bytebefore,16)
+							bafter = int(byteafter,16)
+							insertbytes = ""
+							bbefore += 1
+							while bbefore < bafter:
+								insertbytes += "%02x" % bbefore
+								bbefore += 1
+							newbadchars += insertbytes
+					else:
+						newbadchars += curchar
+					bpos += 2
+				badchars = newbadchars
+
+
+				cnt = 0
+				strb = ""
+				while cnt < len(badchars):
+					strb=strb+binascii.a2b_hex(badchars[cnt]+badchars[cnt+1])
+					cnt=cnt+2
+				badbytes = strb
 
 			if not encodertype in validencoders:
 				encodertyperror = True
